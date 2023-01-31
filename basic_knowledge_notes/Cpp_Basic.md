@@ -69,7 +69,65 @@ B *pb=&b; pb->foo(3.14);
 
 **<<<constexpr和const**
 
+constexpr是C++11新添加的关键字，表示“常量”的语义；而const却存在两种语义（“只读”和“常量”）。例如：
 
+```c++
+// 错误！const参数表示x在dis_1中只读，并非常量
+void dis_1(const int x){
+    array<int, x> myarr{1,2,3,4,5};
+}
+// 正确，这里的const表示常量语义
+void dis_2(){
+	const int x = 5;          // 更好的表达是使用 constexpr
+    array<int, x> myarr{1,2,3,4,5};
+}
+```
 
+constexpr就是为了解决const的语义二义性，将“常量”留给constexpr表达，“只读”留给const表达。
 
+用constexpr修饰指针，仅对指针有效，即指针指向不可改变，但是所指的数据是可以改变的：
+
+```c++
+constexpr int *p = nullptr;       // 常量指针，顶层const
+const int *p = nullptr;           // 指向常量的指针，底层const
+int *const p = nullptr;           // 常量指针，顶层const
+```
+
+**<<<volatile**
+
+用该关键字声明的变量表示<u>该变量随时可能发生变化</u>，与该变量有关的运算，不会被编译优化，从而可以**提供对特殊地址的稳定访问**。系统总是会重新从它所在的内存中读取数据，而不是直接从寄存器中拷贝内容。
+
+详见：[C++中的volatile_龙行天下01的博客-CSDN博客_c++ volatile](https://blog.csdn.net/whl0071/article/details/125395653)
+
+使用场景：中断服务程序 + cpu相关寄存器的定义
+
+经典案例，空循环。想要测试空循环的速度：
+
+```c++
+for(int i=0; i<1000000; i++);            // 错误！编译器会优化，读取过程其实根本没有执行。
+for(volatile int i=0; i<1000000; i++);   // 正确，编译器不会优化了。
+```
+
+**<<<前置++和后置++**
+
+```c++
+self& operator++(){             // 前置++
+    node = (linktype)((node).next);
+    return *this;
+}
+
+const self operator++(int){     // 后置++
+	self temp = *this;
+    ++*this;    // 调用前置++
+    return temp;
+}
+```
+
+前后置++是以重载函数的参数来区分的，后置++的参数有个int，在调用的时候编译器会默默地将这个int指定为一个0.
+
+1. 前置++返回引用（是左值），而后置++返回对象（是右值）。后置++需要创建临时对象，所以无法返回引用。
+2. 后置++函数返回值加了const。其实不加也可以，这是为了防止连续使用++++。
+3. 最好使用前置++，不会创建临时对象，也没有构造和析构的开销。
+
+**<<<std::automic**
 
